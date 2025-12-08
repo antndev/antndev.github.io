@@ -5,6 +5,14 @@ layout: null
 <!DOCTYPE html>
 <html lang="{{ page.lang | default: site.lang | default: 'en' }}">
   {%- include head.html -%}
+  <style>
+    /* Only change background in dark mode */
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #0d1117 !important;
+      }
+    }
+  </style>
   <body>
     <main class="page-content" aria-label="Content">
       <div class="wrapper">

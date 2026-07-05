@@ -1,5 +1,6 @@
 ---
 layout: home
+title: antn.dev
 ---
 
 anton, developer and selfhoster.

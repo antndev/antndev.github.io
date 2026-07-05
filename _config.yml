@@ -1,4 +1,4 @@
-remote_theme: jekyll/minimal
+theme: jekyll-theme-hacker
 
-minimal:
-  skin: auto
+title: antn.dev
+description: antn.dev

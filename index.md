@@ -1,3 +1,7 @@
+---
+layout: home
+---
+
 anton, developer and selfhoster.
 
 I build things that run quietly at home: automation, infrastructure, and small systems that just work.

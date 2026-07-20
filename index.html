@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>antn.dev</title>
+<style>
+  :root { color-scheme: light dark; }
+
+  body {
+    margin: 0;
+    min-height: 100svh;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 2rem 1rem;
+    font: italic clamp(1.1rem, 2.6vw, 1.4rem)/1.5 "Times New Roman", Times, serif;
+  }
+
+  p { margin: 0; }
+
+  #message { font-size: 1.15em; }
+
+  /* Reserve the space only while playing, so the start screen stays centred */
+  main:has(#table:not([hidden])) #message { min-height: 2.2em; }
+
+  .label { font-size: .8em; }
+  .label span { opacity: .4; }
+  .label .score { font-size: 1.25em; opacity: .85; margin-left: .35em; }
+
+  .hand {
+    font-size: 1.5em;
+    word-spacing: .45em;
+    min-height: 1.6em;
+    margin-bottom: .7rem;
+  }
+
+  .red { color: light-dark(#a8232a, #d97070); }
+
+  #actions { min-height: 1.5em; transition: opacity .2s ease; }
+
+  #status { margin-top: .8rem; font-size: .8em; opacity: .35; }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0 .7em;
+    cursor: pointer;
+    transition: opacity .2s;
+  }
+
+  button:hover, button:focus-visible { opacity: .5; outline: none; }
+  button:disabled { opacity: .2; cursor: default; }
+
+  .hand .dealt { animation: deal .45s ease backwards; }
+
+  @keyframes deal {
+    from { opacity: 0; transform: translateY(-.4em); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hand .dealt, #message { animation: none !important; }
+    #actions, button { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <p id="message"></p>
+  <div id="table" hidden>
+    <p class="label"><span>Dealer</span><span class="score" id="dealer-score"></span></p>
+    <p class="hand" id="dealer"></p>
+    <p class="label"><span>You</span><span class="score" id="player-score"></span></p>
+    <p class="hand" id="player"></p>
+  </div>
+  <p id="actions"><button>Play</button></p>
+  <p id="status"></p>
+</main>
+<script>
+  const $ = id => document.getElementById(id);
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
+  const START = 1000;
+  const BET = 100;
+
+  let balance = START;
+  let deck, player = [], dealer = [];
+
+  function actions(list, instant) {
+    const el = $("actions");
+    const build = () => {
+      el.innerHTML = "";
+      for (const [text, fn] of list) {
+        const b = document.createElement("button");
+        b.textContent = text;
+        b.onclick = fn;
+        el.append(b);
+      }
+      el.style.opacity = 1;
+    };
+    if (instant) return build();
+    el.style.opacity = 0;
+    setTimeout(build, 200);
+  }
+
+  // Keep the buttons in place while animating, only disable them, so nothing shifts
+  function lock() {
+    for (const b of $("actions").children) {
+      b.disabled = true;
+      b.onclick = null;
+    }
+  }
+
+  function score(hand) {
+    let total = 0, aces = 0;
+    for (const [rank] of hand) {
+      if (rank === "A") { total += 11; aces++; }
+      else if ("JQK".includes(rank)) total += 10;
+      else total += +rank;
+    }
+    while (total > 21 && aces) { total -= 10; aces--; }
+    return total;
+  }
+
+  function shuffled() {
+    const cards = [];
+    for (const suit of "♠♥♦♣")
+      for (const rank of RANKS) cards.push([rank, suit]);
+    for (let i = cards.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+    return cards;
+  }
+
+  function paint(id, hand, faceDown, animate) {
+    const el = $(id);
+    el.innerHTML = "";
+    hand.forEach(([rank, suit], i) => {
+      // The hole card is always the dealer's second one
+      const hidden = faceDown && i === 1;
+      const card = document.createElement("span");
+      card.textContent = hidden ? "?" : rank + suit;
+      card.className = [
+        !hidden && "♥♦".includes(suit) ? "red" : "",
+        animate && i === hand.length - 1 ? "dealt" : "",
+      ].join(" ").trim();
+      el.append(card, document.createTextNode(" "));
+    });
+  }
+
+  function render(faceDown, dealtTo) {
+    paint("dealer", dealer, faceDown, dealtTo === "dealer");
+    paint("player", player, false, dealtTo === "player");
+    const shown = faceDown ? dealer.filter((_, i) => i !== 1) : dealer;
+    $("dealer-score").textContent = dealer.length ? score(shown) : "";
+    $("player-score").textContent = player.length ? score(player) : "";
+  }
+
+  async function play() {
+    balance -= BET;
+    $("status").textContent = `Balance ${balance} · Bet ${BET}`;
+    $("message").textContent = "";
+    $("message").style.animation = "";
+    $("table").hidden = false;
+    lock();
+
+    deck = shuffled();
+    player = []; dealer = [];
+    render(true);
+    for (const who of ["player", "dealer", "player", "dealer"]) {
+      (who === "dealer" ? dealer : player).push(deck.pop());
+      render(true, who);
+      await wait(300);
+    }
+
+    if (score(player) === 21) return stand();
+    actions([["Hit", hit], ["Stand", stand]]);
+  }
+
+  function hit() {
+    player.push(deck.pop());
+    render(true, "player");
+    const total = score(player);
+    if (total > 21) return finish("Bust.", 0);
+    if (total === 21) return stand();
+  }
+
+  async function stand() {
+    lock();
+    const blackjack = player.length === 2 && score(player) === 21;
+    render(false, "dealer");
+    await wait(700);
+    while (score(dealer) < 17) {
+      dealer.push(deck.pop());
+      render(false, "dealer");
+      await wait(700);
+    }
+    const you = score(player), them = score(dealer);
+    if (blackjack && them !== 21) return finish("Blackjack.", 2.5);
+    if (them > 21) return finish("Dealer busts.", 2);
+    if (you > them) return finish("You win.", 2);
+    if (you < them) return finish("You lose.", 0);
+    finish("Push.", 1);
+  }
+
+  function finish(text, payout) {
+    render(false);
+    balance += Math.floor(BET * payout);
+    const broke = balance < BET;
+    $("message").textContent = broke ? text + " Broke." : text;
+    $("message").style.animation = "deal .5s ease";
+    $("status").textContent = "Balance " + balance;
+    actions(broke
+      ? [["Play again", () => { balance = START; play(); }]]
+      : [["Next", play]]);
+  }
+
+  actions([["Play", play]], true);
+</script>
+</body>
+</html>

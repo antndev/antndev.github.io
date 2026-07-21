@@ -42,6 +42,7 @@
   #actions { min-height: 1.5em; transition: opacity .2s ease; }
 
   #status { margin-top: .8rem; font-size: .8em; opacity: .35; }
+  #status span + span { margin-left: 1.6em; }
 
   button {
     font: inherit;
@@ -165,7 +166,7 @@
 
   async function play() {
     balance -= BET;
-    $("status").textContent = `Balance ${balance} · Bet ${BET}`;
+    $("status").innerHTML = `<span>Balance ${balance}</span><span>Bet ${BET}</span>`;
     $("message").textContent = "";
     $("message").style.animation = "";
     $("table").hidden = false;

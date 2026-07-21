@@ -69,7 +69,7 @@
 </head>
 <body>
 <main>
-  <p id="message"></p>
+  <p id="message">Blackjack</p>
   <div id="table" hidden>
     <p class="label"><span>Dealer</span><span class="score" id="dealer-score"></span></p>
     <p class="hand" id="dealer"></p>
@@ -88,6 +88,7 @@
 
   let balance = START;
   let staked = 0;
+  let lastStake = 0;
   let deck, player = [], dealer = [];
 
   function status() {
@@ -115,13 +116,21 @@
     status();
     if (balance <= 0) {
       $("message").textContent += " Broke.";
-      actions([["Play again", () => { balance = START; $("message").textContent = ""; chooseStake(); }]]);
+      actions([["Play again", () => {
+        balance = START;
+        lastStake = 0;
+        $("message").textContent = "";
+        chooseStake();
+      }]]);
       return;
     }
-    actions([
+    const options = [
       ...stakes().map(value => [String(value), () => play(value)]),
       ["All in", () => play(balance)],
-    ], { instant });
+    ];
+    if (lastStake && lastStake <= balance)
+      options.unshift(["Same bet", () => play(lastStake)]);
+    actions(options, { instant });
   }
 
   function actions(list, { instant, locked } = {}) {
@@ -195,7 +204,7 @@
   }
 
   async function play(amount) {
-    staked = amount;
+    staked = lastStake = amount;
     balance -= staked;
     status();
     $("message").textContent = "";

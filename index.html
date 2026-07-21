@@ -87,6 +87,7 @@
   const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
   const SHARES = [0.05, 0.1, 0.25];
   const START = 1000;
+  const TITLE = "Blackjack";
 
   let balance = START;
   let staked = 0;
@@ -126,7 +127,7 @@
         lastStake = 0;
         rounds = 0;
         $("message").className = "";
-        $("message").textContent = "";
+        $("message").textContent = TITLE;
         chooseStake();
       }]]);
       return;

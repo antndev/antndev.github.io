@@ -89,7 +89,7 @@
   let balance = START;
   let deck, player = [], dealer = [];
 
-  function actions(list, instant) {
+  function actions(list, { instant, locked } = {}) {
     const el = $("actions");
     const build = () => {
       el.innerHTML = "";
@@ -97,6 +97,7 @@
         const b = document.createElement("button");
         b.textContent = text;
         b.onclick = fn;
+        b.disabled = !!locked;
         el.append(b);
       }
       el.style.opacity = 1;
@@ -107,11 +108,11 @@
   }
 
   // Keep the buttons in place while animating, only disable them, so nothing shifts
-  function lock() {
-    for (const b of $("actions").children) {
-      b.disabled = true;
-      b.onclick = null;
-    }
+  const lock = () => setDisabled(true);
+  const unlock = () => setDisabled(false);
+
+  function setDisabled(state) {
+    for (const b of $("actions").children) b.disabled = state;
   }
 
   function score(hand) {
@@ -166,7 +167,7 @@
     $("message").textContent = "";
     $("message").style.animation = "";
     $("table").hidden = false;
-    lock();
+    actions([["Hit", hit], ["Stand", stand]], { locked: true });
 
     deck = shuffled();
     player = []; dealer = [];
@@ -178,7 +179,7 @@
     }
 
     if (score(player) === 21) return stand();
-    actions([["Hit", hit], ["Stand", stand]]);
+    unlock();
   }
 
   function hit() {
@@ -219,7 +220,7 @@
       : [["Next", play]]);
   }
 
-  actions([["Play", play]], true);
+  actions([["Play", play]], { instant: true });
 </script>
 </body>
 </html>

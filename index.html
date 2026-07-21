@@ -169,7 +169,7 @@
     $("message").textContent = "";
     $("message").style.animation = "";
     $("table").hidden = false;
-    actions([["Hit", hit], ["Stand", stand]], { locked: true });
+    actions([["Hit", hit], ["Stand", stand]], { instant: true, locked: true });
 
     deck = shuffled();
     player = []; dealer = [];

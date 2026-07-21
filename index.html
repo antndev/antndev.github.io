@@ -20,7 +20,9 @@
 
   p { margin: 0; }
 
-  #message { font-size: 1.15em; }
+  #message { font-size: 1.15em; line-height: 1.2; }
+
+  #message.over { font-size: 1.5em; }
 
   main:has(#table:not([hidden])) #message { min-height: 2.2em; }
 
@@ -37,7 +39,7 @@
 
   .red { color: light-dark(#a8232a, #d97070); }
 
-  #actions { min-height: 1.5em; margin-top: 1.1rem; transition: opacity .2s ease; }
+  #actions { min-height: 1.5em; margin-top: .7rem; transition: opacity .2s ease; }
 
   #status { margin-top: 1.1rem; font-size: .8em; opacity: .35; }
 
@@ -89,6 +91,7 @@
   let balance = START;
   let staked = 0;
   let lastStake = 0;
+  let rounds = 0;
   let deck, player = [], dealer = [];
 
   function status() {
@@ -115,10 +118,14 @@
     staked = 0;
     status();
     if (balance <= 0) {
-      $("message").textContent += " Broke.";
+      $("table").hidden = true;
+      $("message").className = "over";
+      $("message").textContent = `Broke after ${rounds} ${rounds === 1 ? "round" : "rounds"}.`;
       actions([["Play again", () => {
         balance = START;
         lastStake = 0;
+        rounds = 0;
+        $("message").className = "";
         $("message").textContent = "";
         chooseStake();
       }]]);
@@ -206,6 +213,7 @@
   async function play(amount) {
     staked = lastStake = amount;
     balance -= staked;
+    rounds++;
     status();
     $("message").textContent = "";
     $("message").style.animation = "";

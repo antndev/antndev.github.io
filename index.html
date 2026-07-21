@@ -76,44 +76,53 @@
     <p class="label"><span>You</span><span class="score" id="player-score"></span></p>
     <p class="hand" id="player"></p>
   </div>
-  <p id="actions"><button>Play</button></p>
-  <p id="status">
-    Balance <span id="balance">1000</span>
-    <button id="less">&minus;</button>Bet <span id="bet">100</span><button id="more">+</button>
-  </p>
+  <p id="actions"><button>50</button><button>100</button><button>250</button><button>All in</button></p>
+  <p id="status">Balance 1000</p>
 </main>
 <script>
   const $ = id => document.getElementById(id);
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
-  const BETS = [10, 25, 50, 100, 250, 500, 1000];
+  const SHARES = [0.05, 0.1, 0.25];
   const START = 1000;
 
   let balance = START;
-  let bet = 100;
   let staked = 0;
-  let inRound = false;
   let deck, player = [], dealer = [];
 
-  const affordable = () => BETS.filter(b => b <= balance);
-
   function status() {
-    const options = affordable();
-    $("balance").textContent = balance;
-    $("bet").textContent = bet;
-    $("less").disabled = inRound || !options.length || bet <= options[0];
-    $("more").disabled = inRound || !options.length || bet >= options.at(-1);
+    $("status").textContent = staked
+      ? `Balance ${balance} Bet ${staked}`
+      : `Balance ${balance}`;
   }
 
-  function changeBet(step) {
-    const options = affordable();
-    const i = options.indexOf(bet) + step;
-    if (options[i]) bet = options[i];
+  function roundDown(n) {
+    const p = 10 ** Math.floor(Math.log10(n));
+    return Math.floor([1, 2, 2.5, 5, 10].filter(m => m * p <= n).pop() * p);
+  }
+
+  function stakes() {
+    const options = [];
+    for (const share of SHARES) {
+      const value = balance * share >= 1 ? roundDown(balance * share) : 0;
+      if (value >= 1 && value < balance && !options.includes(value)) options.push(value);
+    }
+    return options.sort((a, b) => a - b);
+  }
+
+  function chooseStake(instant) {
+    staked = 0;
     status();
+    if (balance <= 0) {
+      $("message").textContent += " Broke.";
+      actions([["Play again", () => { balance = START; $("message").textContent = ""; chooseStake(); }]]);
+      return;
+    }
+    actions([
+      ...stakes().map(value => [String(value), () => play(value)]),
+      ["All in", () => play(balance)],
+    ], { instant });
   }
-
-  $("less").onclick = () => changeBet(-1);
-  $("more").onclick = () => changeBet(1);
 
   function actions(list, { instant, locked } = {}) {
     const el = $("actions");
@@ -185,9 +194,8 @@
     $("player-score").textContent = player.length ? score(player) : "";
   }
 
-  async function play() {
-    inRound = true;
-    staked = bet;
+  async function play(amount) {
+    staked = amount;
     balance -= staked;
     status();
     $("message").textContent = "";
@@ -237,22 +245,12 @@
   function finish(text, payout) {
     render(false);
     balance += Math.floor(staked * payout);
-    inRound = false;
-
-    const options = affordable();
-    if (options.length && !options.includes(bet)) bet = options.at(-1);
-
-    const broke = !options.length;
-    $("message").textContent = broke ? text + " Broke." : text;
+    $("message").textContent = text;
     $("message").style.animation = "deal .5s ease";
-    status();
-    actions(broke
-      ? [["Play again", () => { balance = START; bet = 100; play(); }]]
-      : [["Next", play]]);
+    chooseStake();
   }
 
-  status();
-  actions([["Play", play]], { instant: true });
+  chooseStake(true);
 </script>
 </body>
 </html>

@@ -9,7 +9,6 @@
 
   body {
     margin: 0;
-    /* Padding zählt zur Höhe, sonst ragt die Seite über 100svh hinaus */
     box-sizing: border-box;
     min-height: 100svh;
     display: grid;
@@ -23,7 +22,6 @@
 
   #message { font-size: 1.15em; }
 
-  /* Reserve the space only while playing, so the start screen stays centred */
   main:has(#table:not([hidden])) #message { min-height: 2.2em; }
 
   .label { font-size: .8em; }
@@ -135,7 +133,6 @@
     setTimeout(build, 200);
   }
 
-  // Keep the buttons in place while animating, only disable them, so nothing shifts
   const lock = () => setDisabled(true);
   const unlock = () => setDisabled(false);
 
@@ -169,7 +166,6 @@
     const el = $(id);
     el.innerHTML = "";
     hand.forEach(([rank, suit], i) => {
-      // The hole card is always the dealer's second one
       const hidden = faceDown && i === 1;
       const card = document.createElement("span");
       card.textContent = hidden ? "?" : rank + suit;
@@ -243,7 +239,6 @@
     balance += Math.floor(staked * payout);
     inRound = false;
 
-    // Nach Verlusten kann der alte Einsatz zu hoch sein
     const options = affordable();
     if (options.length && !options.includes(bet)) bet = options.at(-1);
 
